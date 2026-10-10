@@ -26,7 +26,7 @@ final class VideoEncoder {
                 compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
                 compressionSessionOut: &created)
             if status == noErr, created != nil {
-                log("인코더: \(codec == .hevc ? "HEVC" : "H.264") \(width)x\(height), \(bitrateMbps)Mbps, 저지연=\(lowLatency)")
+                log("인코더: \(codec == .hevc ? "HEVC" : "H.264") \(width)x\(height), 저지연=\(lowLatency)")
                 break
             }
             if !lowLatency { throw SenderError.encoderFailed(status) }
@@ -34,13 +34,10 @@ final class VideoEncoder {
         guard let session = created else { throw SenderError.encoderFailed(-1) }
 
         let profile = codec == .hevc ? kVTProfileLevel_HEVC_Main_AutoLevel : kVTProfileLevel_H264_High_AutoLevel
-        let bitrate = bitrateMbps * 1_000_000
         let properties: [CFString: Any] = [
             kVTCompressionPropertyKey_RealTime: true,
             kVTCompressionPropertyKey_AllowFrameReordering: false,
             kVTCompressionPropertyKey_ProfileLevel: profile,
-            kVTCompressionPropertyKey_AverageBitRate: bitrate,
-            kVTCompressionPropertyKey_DataRateLimits: [bitrate / 8 * 2, 1] as CFArray,
             kVTCompressionPropertyKey_ExpectedFrameRate: fps,
             kVTCompressionPropertyKey_MaxKeyFrameIntervalDuration: 10,
             kVTCompressionPropertyKey_PrioritizeEncodingSpeedOverQuality: true,
@@ -51,6 +48,16 @@ final class VideoEncoder {
         }
         VTCompressionSessionPrepareToEncodeFrames(session)
         self.session = session
+        setBitrate(mbps: bitrateMbps)
+    }
+
+    /// 인코딩 중에도 바꿀 수 있다 (연결 종류가 바뀔 때 사용).
+    func setBitrate(mbps: Int) {
+        guard let session else { return }
+        let bitrate = mbps * 1_000_000
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: bitrate as CFNumber)
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_DataRateLimits,
+                             value: [bitrate / 8 * 2, 1] as CFArray)
     }
 
     deinit {

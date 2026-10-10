@@ -13,17 +13,26 @@ public final class MessageConnection {
     public var onClose: ((Error?) -> Void)?
 
     private let pending = OSAllocatedUnfairLock(initialState: 0)
+    private let sent = OSAllocatedUnfairLock<UInt64>(initialState: 0)
     private var closed = false
 
     /// 아직 커널로 넘어가지 않은 전송 수. 송신 측 백프레셔에 사용한다.
     public var pendingSends: Int { pending.withLock { $0 } }
+
+    /// 지금까지 보낸 바이트 수 (헤더 포함). 전송 속도 표시에 사용한다.
+    public var bytesSent: UInt64 { sent.withLock { $0 } }
+
+    /// 연결이 실제로 사용 중인 네트워크 인터페이스.
+    public var currentInterface: NWInterface? {
+        connection.currentPath?.availableInterfaces.first
+    }
 
     public init(connection: NWConnection, queue: DispatchQueue) {
         self.connection = connection
         self.queue = queue
     }
 
-    public static func tcpParameters(prohibitWiFi: Bool = false) -> NWParameters {
+    public static func tcpParameters(prohibitWiFi: Bool = false, interface: NWInterface? = nil) -> NWParameters {
         let tcp = NWProtocolTCP.Options()
         tcp.noDelay = true
         tcp.enableKeepalive = true
@@ -32,6 +41,9 @@ public final class MessageConnection {
         params.serviceClass = .interactiveVideo
         if prohibitWiFi {
             params.prohibitedInterfaceTypes = [.wifi, .cellular]
+        }
+        if let interface {
+            params.requiredInterface = interface
         }
         return params
     }
@@ -64,6 +76,8 @@ public final class MessageConnection {
         var header = Data([type.rawValue])
         withUnsafeBytes(of: UInt32(payload.count).bigEndian) { header.append(contentsOf: $0) }
         pending.withLock { $0 += 1 }
+        let total = UInt64(header.count + payload.count)
+        sent.withLock { $0 += total }
         connection.batch {
             connection.send(content: header, completion: .idempotent)
             connection.send(content: payload, completion: .contentProcessed { [weak self] error in

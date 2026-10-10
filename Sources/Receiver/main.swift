@@ -83,19 +83,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             statusText = "서버를 시작할 수 없습니다: \(error)"
         }
         refreshStatusLabel()
+
+        // 케이블을 꽂거나 뽑으면 대기 화면의 인터페이스 목록을 갱신한다.
+        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            guard let self, !self.statusLabel.isHidden else { return }
+            self.refreshStatusLabel()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     private func refreshStatusLabel() {
-        let addresses = localIPv4Addresses().map { "\($0.interface)  \($0.address)" }.joined(separator: "\n")
+        let interfaces = NetworkInterfaces.ipv4Addresses()
+        let addresses = interfaces.map { "\($0.kind)  \($0.name)  \($0.address)" }.joined(separator: "\n")
+        let hasThunderbolt = interfaces.contains { $0.kind == .thunderbolt }
+        let tip = hasThunderbolt
+            ? "✓ 썬더볼트 연결이 감지되었습니다"
+            : "💡 썬더볼트 케이블(⚡)로 두 Mac을 연결하면 가장 빠르고 안정적입니다"
         statusLabel.stringValue = """
         iMac Display 수신기
         \(statusText)
 
-        \(addresses)
+        \(addresses.isEmpty ? "네트워크 연결 없음" : addresses)
 
-        맥북에서 Sender를 실행하세요 · 종료: ⌘Q
+        연결 우선순위: 썬더볼트 → 유선 랜 → Wi-Fi (자동 선택)
+        \(tip)
+
+        맥북에서 iMacDisplay Sender를 실행하세요 · 종료: ⌘Q
         """
     }
 
@@ -122,25 +136,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         appItem.submenu = appMenu
         NSApp.mainMenu = main
     }
-}
-
-/// 연결 안내용 IPv4 주소 목록. 썬더볼트 브릿지는 보통 bridge0으로 보인다.
-func localIPv4Addresses() -> [(interface: String, address: String)] {
-    var result: [(String, String)] = []
-    var ifaddr: UnsafeMutablePointer<ifaddrs>?
-    guard getifaddrs(&ifaddr) == 0, let first = ifaddr else { return [] }
-    defer { freeifaddrs(ifaddr) }
-    for pointer in sequence(first: first, next: { $0.pointee.ifa_next }) {
-        let entry = pointer.pointee
-        guard let addr = entry.ifa_addr, addr.pointee.sa_family == UInt8(AF_INET),
-              entry.ifa_flags & UInt32(IFF_LOOPBACK) == 0,
-              entry.ifa_flags & UInt32(IFF_UP) != 0 else { continue }
-        var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-        if getnameinfo(addr, socklen_t(addr.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0 {
-            result.append((String(cString: entry.ifa_name), String(cString: host)))
-        }
-    }
-    return result
 }
 
 let app = NSApplication.shared

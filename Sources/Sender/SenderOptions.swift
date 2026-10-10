@@ -11,7 +11,8 @@ struct SenderOptions {
     /// true면 Wi-Fi를 쓰지 않는다 (썬더볼트/이더넷만).
     var wiredOnly: Bool
     var codec: Codec
-    var bitrateMbps: Int
+    /// nil이면 연결 종류에 맞춰 자동 (썬더볼트 120 / 유선 60 / Wi-Fi 25 Mbps)
+    var bitrateMbps: Int?
     var fps: Int
     /// 전송 해상도의 가로 픽셀 상한 (예: 3840). 0이면 iMac 원래 해상도.
     var maxWidth: Int
@@ -31,7 +32,7 @@ struct SenderOptions {
             port: UInt16(int("port", Int(defaultPort))),
             wiredOnly: bool("wiredOnly", false),
             codec: d.string(forKey: "codec")?.lowercased() == "h264" ? .h264 : .hevc,
-            bitrateMbps: int("bitrate", 40),
+            bitrateMbps: d.object(forKey: "bitrate") == nil ? nil : d.integer(forKey: "bitrate"),
             fps: int("fps", 60),
             maxWidth: int("maxWidth", 0),
             hiDPI: bool("hiDPI", true)

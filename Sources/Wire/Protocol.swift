@@ -3,6 +3,8 @@ import Foundation
 /// Bonjour 서비스 타입. 썬더볼트 브릿지(링크 로컬)에서도 동작한다.
 public let serviceType = "_imacdisplay._tcp"
 public let defaultPort: UInt16 = 52_020
+/// 2: ping/pong 추가 (0.2.0)
+public let protocolVersion = 2
 
 /// 프레임: [type: UInt8][length: UInt32 BE][payload]
 public enum MessageType: UInt8 {
@@ -14,9 +16,15 @@ public enum MessageType: UInt8 {
     case frame = 3
     /// 수신 → 송신: 디코딩 실패 등으로 키프레임이 필요함
     case requestKeyframe = 4
+    /// 송신 → 수신: 왕복 지연 측정 (payload 그대로 pong으로 돌려준다)
+    case ping = 5
+    /// 수신 → 송신
+    case pong = 6
 }
 
-public struct Hello: Codable {
+public struct Hello: Codable, Equatable {
+    /// 0.1 수신기는 이 값을 보내지 않는다 (nil).
+    public var protocolVersion: Int?
     public var name: String
     public var pixelWidth: Int
     public var pixelHeight: Int
@@ -26,6 +34,7 @@ public struct Hello: Codable {
 
     public init(name: String, pixelWidth: Int, pixelHeight: Int, scale: Double,
                 widthMillimeters: Double, heightMillimeters: Double) {
+        self.protocolVersion = Wire.protocolVersion
         self.name = name
         self.pixelWidth = pixelWidth
         self.pixelHeight = pixelHeight

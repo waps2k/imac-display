@@ -45,15 +45,18 @@ final class ReceiverServer {
         let conn = MessageConnection(connection: nw, queue: queue)
         conn.onReady = { [weak self, weak conn] in
             guard let self, let conn else { return }
-            self.status("연결됨: \(nw.endpoint)")
+            let kind = conn.currentInterface.map { NetworkInterfaces.kind(of: $0) }
+            self.status("연결됨 (\(kind?.description ?? "네트워크")): \(nw.endpoint)")
             if let data = try? JSONEncoder().encode(self.hello) {
                 conn.send(.hello, data)
             }
             DispatchQueue.main.async { self.onConnected?() }
         }
-        conn.onMessage = { [weak self] type, data in
+        conn.onMessage = { [weak self, weak conn] type, data in
             guard let self else { return }
             switch type {
+            case .ping:
+                conn?.send(.pong, data)
             case .format:
                 if let format = VideoFormat(data) {
                     DispatchQueue.main.async { self.onFormat?(format) }
@@ -62,7 +65,7 @@ final class ReceiverServer {
                 if let frame = VideoFrame(data) {
                     DispatchQueue.main.async { self.onFrame?(frame) }
                 }
-            case .hello, .requestKeyframe:
+            case .hello, .requestKeyframe, .pong:
                 break
             }
         }
