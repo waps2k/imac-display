@@ -40,6 +40,14 @@ Target Display Mode가 없는 iMac에서도 소프트웨어 방식으로 동작�
 - `iMacDisplay Sender.app` → 맥북
 - `iMacDisplay Receiver.app` → iMac으로 복사
 
+## 릴리즈
+
+[Releases](https://github.com/waps2k/imac-display/releases)에서 빌드된 앱을 받을 수 있습니다. 새 버전은 아래 명령 하나로 빌드부터 GitHub 릴리즈 업로드까지 처리합니다.
+
+```bash
+./scripts/release.sh 0.2.2 "변경 내용"
+```
+
 ## 연결 가이드
 
 사용 가능한 연결 중 가장 빠른 경로를 자동으로 고릅니다. 연결할 수 있는 방법을 모두 연결해 두면 앱이 알아서 가장 좋은 경로를 씁니다.
