@@ -78,6 +78,8 @@ The app automatically uses the fastest available path. Connect every option you 
 - The bitrate is chosen automatically by connection type: Thunderbolt 120 / Ethernet 60 / Wi-Fi 25 Mbps.
 - If you plug in a Thunderbolt cable while connected over Wi-Fi, the app switches to Thunderbolt within a few seconds. After a brief disconnect, the virtual display and window layout are kept for 15 seconds.
 
+Questions or bug reports: [waps99@gmail.com](mailto:waps99@gmail.com) (also available from **Connection Guide…** in the menu bar)
+
 ### Menu bar
 
 ```

@@ -121,6 +121,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         같은 Wi-Fi에 연결하면 동작하지만 화질과 반응 속도가 떨어집니다. 5GHz 대역이나 Wi-Fi 6을 권장합니다.
 
         메뉴 막대 아이콘: ⚡ 썬더볼트 · 🔌 유선 · 📶 Wi-Fi, 옆 숫자는 실제 전송 속도입니다.
+
+        문의 및 버그 제보: \(developerEmail)
         """, """
         The app automatically uses the fastest available path. If a faster path appears after connecting, it switches over without dropping the display.
 
@@ -134,12 +136,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Works on the same Wi-Fi network, but with lower quality and higher latency. 5 GHz or Wi-Fi 6 is recommended.
 
         Menu bar icon: ⚡ Thunderbolt · 🔌 Ethernet · 📶 Wi-Fi. The number next to it is the actual throughput.
+
+        Questions and bug reports: \(developerEmail)
         """)
         alert.addButton(withTitle: tr("확인", "OK"))
+        alert.addButton(withTitle: tr("개발자에게 메일 보내기", "Email the Developer"))
         NSApp.activate(ignoringOtherApps: true)
-        alert.runModal()
+        if alert.runModal() == .alertSecondButtonReturn {
+            NSWorkspace.shared.open(URL(string: "mailto:\(developerEmail)?subject=iMac%20Display")!)
+        }
     }
 }
+
+/// 연결 가이드에 표시하는 개발자 연락처
+let developerEmail = "waps99@gmail.com"
 
 let app = NSApplication.shared
 let delegate = AppDelegate()
