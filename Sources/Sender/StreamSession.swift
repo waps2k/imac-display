@@ -52,7 +52,7 @@ final class StreamSession {
         self.fps = options.fps
         self.codec = options.codec
 
-        log("수신기: \(hello.name) \(hello.pixelWidth)x\(hello.pixelHeight) → 전송 \(width)x\(height)")
+        log(tr("수신기", "Receiver") + ": \(hello.name) \(hello.pixelWidth)x\(hello.pixelHeight) → " + tr("전송", "streaming") + " \(width)x\(height)")
         display = try VirtualDisplay(
             name: hello.name, pixelWidth: width, pixelHeight: height,
             hiDPI: options.hiDPI && hello.scale >= 2,

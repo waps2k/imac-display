@@ -6,7 +6,7 @@ import Wire
 
 /// 메뉴 막대에 표시할 상태. 메인 스레드에서만 읽고 쓴다.
 struct LinkStatus {
-    var phase = "시작 중…"
+    var phase = tr("시작 중…", "Starting…")
     var connected = false
     var kind: LinkKind?
     var interfaceName: String?
@@ -70,10 +70,10 @@ final class SenderController {
     func start() {
         // 화면 기록 권한이 없으면 연결하지 않는다. 연결부터 하면 가상 디스플레이만 생겼다 사라지기를 반복한다.
         guard CGPreflightScreenCaptureAccess() else {
-            log("화면 기록 권한이 없습니다. 시스템 설정에서 허용한 뒤 앱을 다시 시작하세요")
+            log(tr("화면 기록 권한이 없습니다. 시스템 설정에서 허용한 뒤 앱을 다시 시작하세요", "Screen Recording permission is missing. Allow it in System Settings, then restart the app"))
             CGRequestScreenCaptureAccess()
             status.needsScreenPermission = true
-            status.phase = "화면 기록 권한이 필요합니다"
+            status.phase = tr("화면 기록 권한이 필요합니다", "Screen Recording permission required")
             onUpdate?(status)
             return
         }
@@ -100,7 +100,7 @@ final class SenderController {
         tick = timer
 
         Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.updateStats() }
-        publish { $0.phase = self.options.host == nil ? "iMac 찾는 중…" : "연결 중: \(self.options.host!)" }
+        publish { $0.phase = self.options.host == nil ? tr("iMac 찾는 중…", "Looking for the iMac…") : tr("연결 중", "Connecting") + ": \(self.options.host!)" }
     }
 
     // MARK: - 검색과 연결 (net 큐)
@@ -113,7 +113,7 @@ final class SenderController {
             self.service = chosen?.endpoint
             self.serviceInterfaces = chosen?.interfaces ?? []
             if let chosen {
-                log("수신기 발견: \(chosen.endpoint) (인터페이스: \(chosen.interfaces.map(\.name).joined(separator: ", ")))")
+                log(tr("수신기 발견", "Receiver found") + ": \(chosen.endpoint) (" + tr("인터페이스", "interfaces") + ": \(chosen.interfaces.map(\.name).joined(separator: ", ")))")
             }
             self.evaluate()
         }
@@ -141,7 +141,7 @@ final class SenderController {
                   NetworkInterfaces.kind(of: best, displayNames: names) < active.kind,
                   Date().timeIntervalSince(failedAt[best.name] ?? .distantPast) > Self.upgradeBackoff
             else { return }
-            log("더 빠른 경로 발견: \(NetworkInterfaces.kind(of: best, displayNames: names)) (\(best.name)) — 전환 시도")
+            log(tr("더 빠른 경로 발견", "Faster path found") + ": \(NetworkInterfaces.kind(of: best, displayNames: names)) (\(best.name)) — " + tr("전환 시도", "switching"))
             tryConnect(service, candidates: [best], index: 0, upgrade: true)
         } else {
             // 우선순위대로 시도하고, 마지막으로 시스템 기본 경로도 시도한다.
@@ -161,7 +161,7 @@ final class SenderController {
 
     private func tryConnect(_ endpoint: NWEndpoint, candidates: [NWInterface?], index: Int, upgrade: Bool) {
         guard index < candidates.count else {
-            if active == nil { publish { $0.phase = "수신기에 연결할 수 없음 — 재시도 중" } }
+            if active == nil { publish { $0.phase = tr("수신기에 연결할 수 없음 — 재시도 중", "Can't reach the receiver — retrying") } }
             return
         }
         let interface = candidates[index]
@@ -169,10 +169,10 @@ final class SenderController {
         let conn = MessageConnection(connection: NWConnection(to: endpoint, using: params), queue: queue)
         attempt = conn
 
-        let label = interface.map { "\(NetworkInterfaces.kind(of: $0)) (\($0.name))" } ?? "기본 경로"
-        log("연결 시도: \(label)")
+        let label = interface.map { "\(NetworkInterfaces.kind(of: $0)) (\($0.name))" } ?? tr("기본 경로", "default route")
+        log(tr("연결 시도", "Trying") + ": \(label)")
         if !upgrade {
-            publish { $0.phase = "연결 시도: \(label)" }
+            publish { $0.phase = tr("연결 시도", "Trying") + ": \(label)" }
         }
 
         var ready = false
@@ -194,7 +194,7 @@ final class SenderController {
                 if let interface { self.failedAt[interface.name] = Date() }
                 self.tryConnect(endpoint, candidates: candidates, index: index + 1, upgrade: upgrade)
             } else if self.active?.conn === conn {
-                log("연결 끊김\(error.map { ": \($0)" } ?? "")")
+                log(tr("연결 끊김", "Disconnected") + "\(error.map { ": \($0)" } ?? "")")
                 self.active = nil
                 self.connectionLost()
                 self.evaluate()
@@ -215,7 +215,7 @@ final class SenderController {
         let previous = active
         active = ActiveLink(conn: conn, kind: kind, interfaceName: interface?.name)
         previous?.conn.cancel()
-        log("연결됨: \(kind) (\(interface?.name ?? "?"))\(previous.map { " — \($0.kind)에서 전환" } ?? "")")
+        log(tr("연결됨", "Connected") + ": \(kind) (\(interface?.name ?? "?"))\(previous.map { " — " + tr("\($0.kind)에서 전환", "switched from \($0.kind)") } ?? "")")
 
         let speed = linkSpeed(kind: kind, interfaceName: interface?.name)
         publish {
@@ -223,7 +223,7 @@ final class SenderController {
             $0.interfaceName = interface?.name
             $0.linkSpeedBps = speed
             $0.rttMs = nil
-            $0.phase = "연결됨 — 화면 정보 대기"
+            $0.phase = tr("연결됨 — 화면 정보 대기", "Connected — waiting for display info")
         }
     }
 
@@ -233,7 +233,7 @@ final class SenderController {
             guard let hello = try? JSONDecoder().decode(Hello.self, from: data), let kind = active?.kind else { return }
             active?.supportsPing = (hello.protocolVersion ?? 1) >= 2
             if hello.protocolVersion == nil {
-                log("수신기가 0.1 버전입니다. 지연 시간 표시를 쓰려면 iMac의 Receiver도 업데이트하세요")
+                log(tr("수신기가 0.1 버전입니다. 지연 시간 표시를 쓰려면 iMac의 Receiver도 업데이트하세요", "The receiver is version 0.1. Update the Receiver on the iMac to see latency"))
             }
             DispatchQueue.main.async { self.startOrAttach(hello: hello, conn: conn, kind: kind) }
         case .requestKeyframe:
@@ -260,7 +260,7 @@ final class SenderController {
             self.session?.detach()
             self.sessionConn = nil
             self.status.connected = false
-            self.status.phase = "연결 끊김 — 다시 연결하는 중"
+            self.status.phase = tr("연결 끊김 — 다시 연결하는 중", "Disconnected — reconnecting")
             self.status.throughputBps = 0
             self.status.fps = 0
             self.status.rttMs = nil
@@ -268,7 +268,7 @@ final class SenderController {
 
             // 잠깐 끊긴 거라면 가상 디스플레이를 유지해서 창이 맥북으로 몰려오지 않게 한다.
             let work = DispatchWorkItem {
-                log("재연결되지 않아 가상 디스플레이를 제거합니다")
+                log(tr("재연결되지 않아 가상 디스플레이를 제거합니다", "No reconnection; removing the virtual display"))
                 self.stopSession()
             }
             self.pendingStop?.cancel()
@@ -313,16 +313,16 @@ final class SenderController {
 
     /// 세션을 시작하지 못했을 때: 정리하고, 원인에 따라 재시도를 미룬다.
     private func sessionFailed(_ error: Error, conn: MessageConnection) {
-        log("오류: \(error)")
+        log(tr("오류", "Error") + ": \(error)")
         stopSession()
         let nsError = error as NSError
         let permissionDenied = nsError.domain == SCStreamErrorDomain
             && nsError.code == SCStreamError.userDeclined.rawValue
         if permissionDenied {
             status.needsScreenPermission = true
-            status.phase = "화면 기록 권한이 필요합니다"
+            status.phase = tr("화면 기록 권한이 필요합니다", "Screen Recording permission required")
         } else {
-            status.phase = "오류: \(error.localizedDescription) — 10초 후 재시도"
+            status.phase = tr("오류", "Error") + ": \(error.localizedDescription) — " + tr("10초 후 재시도", "retrying in 10 s")
         }
         status.connected = false
         onUpdate?(status)
@@ -337,8 +337,8 @@ final class SenderController {
         status.receiverName = session.hello.name
         status.resolution = "\(session.width)×\(session.height) \(session.codec == .hevc ? "HEVC" : "H.264")"
         status.bitrateMbps = bitrate
-        status.phase = "전송 중 → \(session.hello.name)"
-        log("\(status.phase) (\(status.kind?.description ?? "?"), 비트레이트 \(bitrate) Mbps)")
+        status.phase = tr("전송 중", "Streaming") + " → \(session.hello.name)"
+        log("\(status.phase) (\(status.kind?.description ?? "?"), " + tr("비트레이트", "bitrate") + " \(bitrate) Mbps)")
         onUpdate?(status)
     }
 

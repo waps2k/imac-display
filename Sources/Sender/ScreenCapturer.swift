@@ -38,7 +38,7 @@ final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate {
         try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: queue)
         try await stream.startCapture()
         self.stream = stream
-        log("캡처 시작: \(width)x\(height) @\(fps)fps")
+        log(tr("캡처 시작", "Capture started") + ": \(width)x\(height) @\(fps)fps")
     }
 
     func stop() {
@@ -59,6 +59,6 @@ final class ScreenCapturer: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
-        log("캡처 중단: \(error)")
+        log(tr("캡처 중단", "Capture stopped") + ": \(error)")
     }
 }

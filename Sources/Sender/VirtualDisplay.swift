@@ -22,7 +22,7 @@ final class VirtualDisplay {
         descriptor.vendorID = 0x1D1D
         descriptor.productID = 0x5E01
         descriptor.serialNum = 0x0001
-        descriptor.terminationHandler = { _, _ in log("가상 디스플레이가 시스템에 의해 종료됨") }
+        descriptor.terminationHandler = { _, _ in log(tr("가상 디스플레이가 시스템에 의해 종료됨", "Virtual display was terminated by the system")) }
 
         let display = CGVirtualDisplay(descriptor: descriptor)
         guard display.displayID != 0 else { throw SenderError.virtualDisplayFailed }
@@ -50,19 +50,19 @@ final class VirtualDisplay {
         let options = [kCGDisplayShowDuplicateLowResolutionModes: kCFBooleanTrue] as CFDictionary
         guard let modes = CGDisplayCopyAllDisplayModes(displayID, options) as? [CGDisplayMode] else { return }
         for mode in modes {
-            log("  모드: \(mode.width)x\(mode.height)pt, \(mode.pixelWidth)x\(mode.pixelHeight)px @\(mode.refreshRate)Hz")
+            log("  " + tr("모드", "Mode") + ": \(mode.width)x\(mode.height)pt, \(mode.pixelWidth)x\(mode.pixelHeight)px @\(mode.refreshRate)Hz")
         }
         let matching = modes.filter { $0.pixelWidth == pixelWidth && $0.pixelHeight == pixelHeight }
         let preferred = matching.first { hiDPI ? $0.width * 2 == $0.pixelWidth : $0.width == $0.pixelWidth }
         guard let mode = preferred ?? matching.first else {
-            log("일치하는 디스플레이 모드가 없어 기본 모드를 사용합니다")
+            log(tr("일치하는 디스플레이 모드가 없어 기본 모드를 사용합니다", "No matching display mode; using the default mode"))
             return
         }
         var config: CGDisplayConfigRef?
         guard CGBeginDisplayConfiguration(&config) == .success else { return }
         CGConfigureDisplayWithDisplayMode(config, displayID, mode, nil)
         if CGCompleteDisplayConfiguration(config, .forSession) == .success {
-            log("디스플레이 모드 선택: \(mode.width)x\(mode.height)pt (\(mode.pixelWidth)x\(mode.pixelHeight)px)")
+            log(tr("디스플레이 모드 선택", "Display mode selected") + ": \(mode.width)x\(mode.height)pt (\(mode.pixelWidth)x\(mode.pixelHeight)px)")
         }
     }
 
@@ -80,9 +80,9 @@ enum SenderError: Error, CustomStringConvertible {
 
     var description: String {
         switch self {
-        case .virtualDisplayFailed: return "가상 디스플레이를 만들 수 없습니다"
-        case .displayNotFound: return "ScreenCaptureKit에서 가상 디스플레이를 찾을 수 없습니다 (화면 기록 권한을 확인하세요)"
-        case .encoderFailed(let s): return "비디오 인코더 생성 실패 (OSStatus \(s))"
+        case .virtualDisplayFailed: return tr("가상 디스플레이를 만들 수 없습니다", "Couldn't create the virtual display")
+        case .displayNotFound: return tr("ScreenCaptureKit에서 가상 디스플레이를 찾을 수 없습니다 (화면 기록 권한을 확인하세요)", "ScreenCaptureKit can't find the virtual display (check the Screen Recording permission)")
+        case .encoderFailed(let s): return tr("비디오 인코더 생성 실패", "Couldn't create the video encoder") + " (OSStatus \(s))"
         }
     }
 }

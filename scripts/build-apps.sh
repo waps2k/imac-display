@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="${VERSION:-0.2.1}"
+VERSION="${VERSION:-0.3.0}"
 swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 
@@ -31,11 +31,22 @@ make_app() {
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><$ui_element/>
     <key>NSHighResolutionCapable</key><true/>
-    <key>NSLocalNetworkUsageDescription</key><string>같은 네트워크(썬더볼트 브릿지 포함)의 iMac Display 기기를 찾고 화면을 주고받습니다.</string>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleLocalizations</key><array><string>en</string><string>ko</string></array>
+    <key>NSLocalNetworkUsageDescription</key><string>Finds iMac Display devices on your network (including Thunderbolt Bridge) to send and receive the screen.</string>
     <key>NSBonjourServices</key><array><string>_imacdisplay._tcp</string></array>
 </dict>
 </plist>
 PLIST
+    # 언어별 리소스: 앱 화면 언어 선택과 권한 안내 문구 번역에 쓰인다.
+    mkdir -p "$app/Contents/Resources/en.lproj" "$app/Contents/Resources/ko.lproj"
+    cat > "$app/Contents/Resources/en.lproj/InfoPlist.strings" <<'STRINGS'
+"NSLocalNetworkUsageDescription" = "Finds iMac Display devices on your network (including Thunderbolt Bridge) to send and receive the screen.";
+STRINGS
+    cat > "$app/Contents/Resources/ko.lproj/InfoPlist.strings" <<'STRINGS'
+"NSLocalNetworkUsageDescription" = "같은 네트워크(썬더볼트 브리지 포함)의 iMac Display 기기를 찾아 화면을 주고받습니다.";
+STRINGS
+
     # 인증서가 없어도 ad-hoc 서명의 요구 조건을 번들 ID로 고정한다.
     # 기본(cdhash) 요구 조건이면 빌드할 때마다 macOS가 다른 앱으로 보고 화면 기록 권한이 풀린다.
     codesign --force --sign - -r="designated => identifier \"$bundle_id\"" "$app"

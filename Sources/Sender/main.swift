@@ -5,13 +5,13 @@ import Wire
 /// 아이콘은 연결 종류(썬더볼트/유선/Wi-Fi)를, 옆 숫자는 실제 전송 속도를 나타낸다.
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
-    private let phaseLine = NSMenuItem(title: "시작 중…", action: nil, keyEquivalent: "")
+    private let phaseLine = NSMenuItem(title: tr("시작 중…", "Starting…"), action: nil, keyEquivalent: "")
     private let linkLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let speedLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let videoLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let tipLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let openPrivacyItem = NSMenuItem(title: "화면 기록 설정 열기…", action: #selector(openScreenRecordingSettings), keyEquivalent: "")
-    private let relaunchItem = NSMenuItem(title: "허용했으면 앱 다시 시작", action: #selector(relaunch), keyEquivalent: "")
+    private let openPrivacyItem = NSMenuItem(title: tr("화면 기록 설정 열기…", "Open Screen Recording Settings…"), action: #selector(openScreenRecordingSettings), keyEquivalent: "")
+    private let relaunchItem = NSMenuItem(title: tr("허용했으면 앱 다시 시작", "Restart App After Allowing"), action: #selector(relaunch), keyEquivalent: "")
     private var controller: SenderController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -27,15 +27,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(openPrivacyItem)
         menu.addItem(relaunchItem)
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "연결 가이드…", action: #selector(showGuide), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: tr("연결 가이드…", "Connection Guide…"), action: #selector(showGuide), keyEquivalent: ""))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "종료", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: tr("종료", "Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         let ownActions = [#selector(showGuide), #selector(openScreenRecordingSettings), #selector(relaunch)]
         menu.items.forEach { if let action = $0.action, ownActions.contains(action) { $0.target = self } }
         statusItem.menu = menu
 
         let options = SenderOptions.load()
-        log("설정: host=\(options.host ?? "자동") codec=\(options.codec) bitrate=\(options.bitrateMbps.map { "\($0)Mbps" } ?? "자동") fps=\(options.fps) maxWidth=\(options.maxWidth) wiredOnly=\(options.wiredOnly)")
+        log(tr("설정", "Settings") + ": host=\(options.host ?? "auto") codec=\(options.codec) bitrate=\(options.bitrateMbps.map { "\($0)Mbps" } ?? "auto") fps=\(options.fps) maxWidth=\(options.maxWidth) wiredOnly=\(options.wiredOnly)")
         controller = SenderController(options: options)
         controller.onUpdate = { [weak self] status in self?.render(status) }
         render(controller.status)
@@ -56,29 +56,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         phaseLine.title = s.phase
 
         if let kind = s.kind {
-            var link = "연결: \(kind)"
+            var link = tr("연결", "Link") + ": \(kind)"
             if let name = s.interfaceName { link += " (\(name))" }
-            if let speed = s.linkSpeedBps { link += " · 링크 \(formatBitRate(Double(speed)))" }
+            if let speed = s.linkSpeedBps { link += " · " + tr("링크", "link") + " \(formatBitRate(Double(speed)))" }
             linkLine.title = link
         }
         linkLine.isHidden = s.kind == nil
 
-        var speed = "전송: \(formatBitRate(s.throughputBps)) · \(Int(s.fps.rounded())) fps"
-        if let rtt = s.rttMs { speed += " · 지연 \(String(format: "%.1f", rtt)) ms" }
-        if s.skippedPerSecond >= 1 { speed += " · 건너뜀 \(Int(s.skippedPerSecond))/s" }
+        var speed = tr("전송", "Sending") + ": \(formatBitRate(s.throughputBps)) · \(Int(s.fps.rounded())) fps"
+        if let rtt = s.rttMs { speed += " · " + tr("지연", "latency") + " \(String(format: "%.1f", rtt)) ms" }
+        if s.skippedPerSecond >= 1 { speed += " · " + tr("건너뜀", "skipped") + " \(Int(s.skippedPerSecond))/s" }
         speedLine.title = speed
         speedLine.isHidden = !s.connected
 
         if let resolution = s.resolution {
-            videoLine.title = "화면: \(resolution)" + (s.bitrateMbps.map { " · 목표 \($0) Mbps" } ?? "")
+            videoLine.title = tr("화면", "Display") + ": \(resolution)" + (s.bitrateMbps.map { " · " + tr("목표", "target") + " \($0) Mbps" } ?? "")
         }
         videoLine.isHidden = !s.connected || s.resolution == nil
 
         switch s.kind {
         case .wifi?:
-            tipLine.title = "💡 썬더볼트 케이블로 연결하면 더 빠르고 안정적입니다"
+            tipLine.title = tr("💡 썬더볼트 케이블로 연결하면 더 빠르고 안정적입니다", "💡 A Thunderbolt cable is faster and more stable")
         case .ethernet?:
-            tipLine.title = "💡 썬더볼트로 연결하면 더 빠릅니다 (자동 전환)"
+            tipLine.title = tr("💡 썬더볼트로 연결하면 더 빠릅니다 (자동 전환)", "💡 Thunderbolt is faster (switches automatically)")
         default:
             tipLine.title = ""
         }
@@ -107,8 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func showGuide() {
         let alert = NSAlert()
-        alert.messageText = "iMac Display 연결 가이드"
-        alert.informativeText = """
+        alert.messageText = tr("iMac Display 연결 가이드", "iMac Display Connection Guide")
+        alert.informativeText = tr("""
         사용 가능한 연결 중 가장 빠른 경로를 자동으로 고릅니다. 연결된 뒤에도 더 빠른 경로가 생기면 화면이 끊기지 않게 자동으로 전환합니다.
 
         ① 썬더볼트 (권장, 최대 10~40 Gbps)
@@ -121,8 +121,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         같은 Wi-Fi에 연결하면 동작하지만 화질과 반응 속도가 떨어집니다. 5GHz 대역이나 Wi-Fi 6을 권장합니다.
 
         메뉴 막대 아이콘: ⚡ 썬더볼트 · 🔌 유선 · 📶 Wi-Fi, 옆 숫자는 실제 전송 속도입니다.
-        """
-        alert.addButton(withTitle: "확인")
+        """, """
+        The app automatically uses the fastest available path. If a faster path appears after connecting, it switches over without dropping the display.
+
+        ① Thunderbolt (recommended, up to 10–40 Gbps)
+        Connect the MacBook and the iMac directly with a Thunderbolt 3/4 cable (marked ⚡). No setup is needed — Thunderbolt Bridge is configured automatically. A regular USB-C charging cable is slow or won't work.
+
+        ② Ethernet (1 Gbps or more)
+        Plug both Macs into the same router/switch with a LAN cable. On the MacBook, use a USB-C Ethernet adapter.
+
+        ③ Wi-Fi
+        Works on the same Wi-Fi network, but with lower quality and higher latency. 5 GHz or Wi-Fi 6 is recommended.
+
+        Menu bar icon: ⚡ Thunderbolt · 🔌 Ethernet · 📶 Wi-Fi. The number next to it is the actual throughput.
+        """)
+        alert.addButton(withTitle: tr("확인", "OK"))
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
     }

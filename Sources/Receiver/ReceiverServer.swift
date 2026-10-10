@@ -25,8 +25,8 @@ final class ReceiverServer {
         listener.service = NWListener.Service(name: hello.name, type: serviceType)
         listener.stateUpdateHandler = { [weak self] state in
             switch state {
-            case .ready: self?.status("대기 중")
-            case .failed(let error): self?.status("서버 오류: \(error)")
+            case .ready: self?.status(tr("대기 중", "Waiting"))
+            case .failed(let error): self?.status(tr("서버 오류", "Server error") + ": \(error)")
             default: break
             }
         }
@@ -46,7 +46,7 @@ final class ReceiverServer {
         conn.onReady = { [weak self, weak conn] in
             guard let self, let conn else { return }
             let kind = conn.currentInterface.map { NetworkInterfaces.kind(of: $0) }
-            self.status("연결됨 (\(kind?.description ?? "네트워크")): \(nw.endpoint)")
+            self.status(tr("연결됨", "Connected") + " (\(kind?.description ?? tr("네트워크", "network"))): \(nw.endpoint)")
             if let data = try? JSONEncoder().encode(self.hello) {
                 conn.send(.hello, data)
             }
@@ -72,7 +72,7 @@ final class ReceiverServer {
         conn.onClose = { [weak self, weak conn] error in
             guard let self, let conn, self.connection === conn else { return }
             self.connection = nil
-            self.status("연결 끊김\(error.map { ": \($0)" } ?? "") — 대기 중")
+            self.status(tr("연결 끊김", "Disconnected") + "\(error.map { ": \($0)" } ?? "") — " + tr("대기 중", "waiting"))
             DispatchQueue.main.async { self.onDisconnected?() }
         }
         connection = conn

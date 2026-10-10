@@ -56,7 +56,7 @@ public final class MessageConnection {
                 self.onReady?()
                 self.receiveHeader()
             case .waiting(let error):
-                log("연결 대기 중: \(error)")
+                log(tr("연결 대기 중: \(error)", "Waiting for connection: \(error)"))
             case .failed(let error):
                 self.finish(error)
             case .cancelled:

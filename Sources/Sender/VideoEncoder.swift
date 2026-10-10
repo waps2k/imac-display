@@ -26,7 +26,7 @@ final class VideoEncoder {
                 compressedDataAllocator: nil, outputCallback: nil, refcon: nil,
                 compressionSessionOut: &created)
             if status == noErr, created != nil {
-                log("인코더: \(codec == .hevc ? "HEVC" : "H.264") \(width)x\(height), 저지연=\(lowLatency)")
+                log(tr("인코더", "Encoder") + ": \(codec == .hevc ? "HEVC" : "H.264") \(width)x\(height), " + tr("저지연", "low latency") + "=\(lowLatency)")
                 break
             }
             if !lowLatency { throw SenderError.encoderFailed(status) }
@@ -44,7 +44,7 @@ final class VideoEncoder {
         ]
         for (key, value) in properties {
             let status = VTSessionSetProperty(session, key: key, value: value as CFTypeRef)
-            if status != noErr { log("인코더 속성 무시됨: \(key) (\(status))") }
+            if status != noErr { log(tr("인코더 속성 무시됨", "Encoder property ignored") + ": \(key) (\(status))") }
         }
         VTCompressionSessionPrepareToEncodeFrames(session)
         self.session = session
@@ -76,7 +76,7 @@ final class VideoEncoder {
             frameProperties: frameProperties, infoFlagsOut: nil
         ) { [weak self] status, _, sampleBuffer in
             guard status == noErr, let sampleBuffer, let self else {
-                if status != noErr { log("인코딩 오류: \(status)") }
+                if status != noErr { log(tr("인코딩 오류", "Encoding error") + ": \(status)") }
                 return
             }
             self.handle(sampleBuffer)

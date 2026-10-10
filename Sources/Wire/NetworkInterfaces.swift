@@ -13,10 +13,10 @@ public enum LinkKind: Int, Comparable, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .thunderbolt: return "썬더볼트"
-        case .ethernet: return "유선 랜"
+        case .thunderbolt: return tr("썬더볼트", "Thunderbolt")
+        case .ethernet: return tr("유선 랜", "Ethernet")
         case .wifi: return "Wi-Fi"
-        case .other: return "기타 네트워크"
+        case .other: return tr("기타 네트워크", "Other network")
         }
     }
 

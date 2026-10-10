@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusLabel = NSTextField(labelWithString: "")
     private var server: ReceiverServer!
     private var sleepAssertion: IOPMAssertionID = 0
-    private var statusText = "시작 중…"
+    private var statusText = tr("시작 중…", "Starting…")
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         installMainMenu()
@@ -55,10 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 수신 중에는 화면이 꺼지지 않게 한다.
         IOPMAssertionCreateWithName(kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
                                     IOPMAssertionLevel(kIOPMAssertionLevelOn),
-                                    "iMac Display 수신 중" as CFString, &sleepAssertion)
+                                    "iMac Display receiving" as CFString, &sleepAssertion)
 
         let hello = makeHello(screen: screen)
-        log("화면: \(hello.pixelWidth)x\(hello.pixelHeight)px, scale \(hello.scale), \(Int(hello.widthMillimeters))x\(Int(hello.heightMillimeters))mm")
+        log(tr("화면", "Screen") + ": \(hello.pixelWidth)x\(hello.pixelHeight)px, scale \(hello.scale), \(Int(hello.widthMillimeters))x\(Int(hello.heightMillimeters))mm")
 
         server = ReceiverServer(hello: hello)
         server.onStatus = { [weak self] text in
@@ -80,7 +80,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             try server.start()
         } catch {
-            statusText = "서버를 시작할 수 없습니다: \(error)"
+            statusText = tr("서버를 시작할 수 없습니다", "Couldn't start the server") + ": \(error)"
         }
         refreshStatusLabel()
 
@@ -98,18 +98,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let addresses = interfaces.map { "\($0.kind)  \($0.name)  \($0.address)" }.joined(separator: "\n")
         let hasThunderbolt = interfaces.contains { $0.kind == .thunderbolt }
         let tip = hasThunderbolt
-            ? "✓ 썬더볼트 연결이 감지되었습니다"
-            : "💡 썬더볼트 케이블(⚡)로 두 Mac을 연결하면 가장 빠르고 안정적입니다"
+            ? tr("✓ 썬더볼트 연결이 감지되었습니다", "✓ Thunderbolt connection detected")
+            : tr("💡 썬더볼트 케이블(⚡)로 두 Mac을 연결하면 가장 빠르고 안정적입니다",
+                 "💡 Connecting the two Macs with a Thunderbolt cable (⚡) is fastest and most stable")
         statusLabel.stringValue = """
-        iMac Display 수신기
+        \(tr("iMac Display 수신기", "iMac Display Receiver"))
         \(statusText)
 
-        \(addresses.isEmpty ? "네트워크 연결 없음" : addresses)
+        \(addresses.isEmpty ? tr("네트워크 연결 없음", "No network connection") : addresses)
 
-        연결 우선순위: 썬더볼트 → 유선 랜 → Wi-Fi (자동 선택)
+        \(tr("연결 우선순위: 썬더볼트 → 유선 랜 → Wi-Fi (자동 선택)", "Connection priority: Thunderbolt → Ethernet → Wi-Fi (automatic)"))
         \(tip)
 
-        맥북에서 iMacDisplay Sender를 실행하세요 · 종료: ⌘Q
+        \(tr("맥북에서 iMacDisplay Sender를 실행하세요 · 종료: ⌘Q", "Launch iMacDisplay Sender on your MacBook · Quit: ⌘Q"))
         """
     }
 
@@ -132,7 +133,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let appItem = NSMenuItem()
         main.addItem(appItem)
         let appMenu = NSMenu()
-        appMenu.addItem(NSMenuItem(title: "종료", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        appMenu.addItem(NSMenuItem(title: tr("종료", "Quit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         appItem.submenu = appMenu
         NSApp.mainMenu = main
     }

@@ -18,10 +18,9 @@ Virtual display → ScreenCaptureKit capture → HEVC hardware encode
 - Finds the iMac via Bonjour and picks the fastest path in this order: **Thunderbolt → Ethernet → Wi-Fi**.
 - If a faster path becomes available while connected, it switches over automatically and keeps the virtual display in place.
 - The menu bar shows the connection type, link speed, actual throughput, fps, and latency.
+- English and Korean interface, following your macOS language.
 
 > ⚠️ This project is experimental. The virtual display uses Apple's **private API** (`CGVirtualDisplay`), so it may break after a macOS update.
->
-> The app's own interface (menu bar and iMac waiting screen) is currently in Korean.
 
 ## Install
 
@@ -90,14 +89,22 @@ Sending: 87.3 Mbps · 60 fps · latency 1.4 ms
 Display: 5120×2880 HEVC · target 120 Mbps
 ```
 
-(The menu text in the app is in Korean. The lines above are translated.)
 
 ## Usage
 
 1. On the **iMac**, launch `iMacDisplay Receiver`. The screen turns into a black waiting screen that shows the iMac's IP addresses. Press ⌘Q to quit.
 2. On the **MacBook**, launch `iMacDisplay Sender`. An icon appears in the menu bar.
-   - On first launch it asks for **Screen Recording** permission. Grant it, then choose **Restart app** (앱 다시 시작) from the menu bar menu.
+   - On first launch it asks for **Screen Recording** permission. Grant it, then choose **Restart App After Allowing** from the menu bar menu.
 3. On the MacBook, arrange the iMac display in System Settings → Displays.
+
+### Language
+
+The apps are available in English and Korean and follow your macOS language. To pick a language for one app only, use System Settings → General → Language & Region → Applications. You can also force it:
+
+```bash
+defaults write com.waps2k.imacdisplay.sender language en     # or ko
+defaults write com.waps2k.imacdisplay.receiver language en
+```
 
 ### Options
 
@@ -125,7 +132,7 @@ defaults write com.waps2k.imacdisplay.sender bitrate -int 80
 
 ## Troubleshooting
 
-- **Screen Recording error / ⚠️ in the menu bar**: Allow iMacDisplay Sender in System Settings → Privacy & Security → Screen & System Audio Recording, then choose **Restart app** from the menu. If it still fails while the toggle is on, a permission record from version 0.2.0 or earlier is left over. Reset it with the command below and allow it again (from 0.2.1 on, the permission survives updates).
+- **Screen Recording error / ⚠️ in the menu bar**: Allow iMacDisplay Sender in System Settings → Privacy & Security → Screen & System Audio Recording, then choose **Restart App After Allowing** from the menu. If it still fails while the toggle is on, a permission record from version 0.2.0 or earlier is left over. Reset it with the command below and allow it again (from 0.2.1 on, the permission survives updates).
   `tccutil reset ScreenCapture com.waps2k.imacdisplay.sender`
 - **Stuttering or artifacts**: Lower the resolution (for example `maxWidth 3840`) or adjust `bitrate`. The iMac 2017 decoder may struggle with 5K HEVC.
 - **The iMac isn't found**: Set its IP with `host`. The iMac's waiting screen lists its IP for each connection type.
@@ -152,7 +159,7 @@ Sources/
 - [ ] Audio streaming
 - [ ] iMac brightness control
 - [ ] Mirroring mode
-- [ ] English app interface
+- [x] English app interface
 
 ## License
 

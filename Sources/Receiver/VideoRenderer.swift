@@ -25,18 +25,18 @@ final class VideoRenderer {
 
     func setFormat(_ videoFormat: VideoFormat) {
         guard let description = makeFormatDescription(videoFormat) else {
-            log("포맷 생성 실패")
+            log(tr("포맷 생성 실패", "Couldn't create the video format"))
             return
         }
         if let format, CMFormatDescriptionEqual(format, otherFormatDescription: description) { return }
         let dims = CMVideoFormatDescriptionGetDimensions(description)
-        log("비디오 포맷: \(videoFormat.codec == .hevc ? "HEVC" : "H.264") \(dims.width)x\(dims.height)")
+        log(tr("비디오 포맷", "Video format") + ": \(videoFormat.codec == .hevc ? "HEVC" : "H.264") \(dims.width)x\(dims.height)")
         format = description
     }
 
     func enqueue(_ frame: VideoFrame) {
         if layer.status == .failed {
-            log("디코더 오류: \(layer.error.map { "\($0)" } ?? "알 수 없음") — 키프레임 요청")
+            log(tr("디코더 오류", "Decoder error") + ": \(layer.error.map { "\($0)" } ?? "?") — " + tr("키프레임 요청", "requesting a keyframe"))
             layer.flush()
             waitingForKeyframe = true
             onNeedKeyframe?()
