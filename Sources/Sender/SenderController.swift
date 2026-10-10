@@ -1,6 +1,7 @@
 import CoreWLAN
 import Foundation
 import Network
+import ScreenCaptureKit
 import Wire
 
 /// 메뉴 막대에 표시할 상태. 메인 스레드에서만 읽고 쓴다.
@@ -17,6 +18,8 @@ struct LinkStatus {
     var fps: Double = 0
     var skippedPerSecond: Double = 0
     var rttMs: Double?
+    /// 화면 기록 권한이 없어 전송할 수 없는 상태
+    var needsScreenPermission = false
 }
 
 /// 수신기를 찾아 가장 빠른 경로(썬더볼트 → 유선 랜 → Wi-Fi)로 연결한다.
@@ -50,6 +53,8 @@ final class SenderController {
     private var active: ActiveLink?
     private var attempt: MessageConnection?
     private var failedAt: [String: Date] = [:]
+    /// 이 시각까지는 새로 연결하지 않는다 (오류 후 재시도 간격, 권한 없음이면 무기한)
+    private var pausedUntil = Date.distantPast
     private var tick: DispatchSourceTimer?
 
     // MARK: 메인 스레드 상태
@@ -63,6 +68,16 @@ final class SenderController {
     }
 
     func start() {
+        // 화면 기록 권한이 없으면 연결하지 않는다. 연결부터 하면 가상 디스플레이만 생겼다 사라지기를 반복한다.
+        guard CGPreflightScreenCaptureAccess() else {
+            log("화면 기록 권한이 없습니다. 시스템 설정에서 허용한 뒤 앱을 다시 시작하세요")
+            CGRequestScreenCaptureAccess()
+            status.needsScreenPermission = true
+            status.phase = "화면 기록 권한이 필요합니다"
+            onUpdate?(status)
+            return
+        }
+
         monitor.pathUpdateHandler = { [weak self] path in
             self?.available = path.availableInterfaces
             self?.evaluate()
@@ -108,7 +123,7 @@ final class SenderController {
 
     /// 지금 무엇을 해야 하는지 판단한다: 첫 연결, 재연결, 더 빠른 경로로 업그레이드.
     private func evaluate() {
-        guard attempt == nil else { return }
+        guard attempt == nil, Date() >= pausedUntil else { return }
 
         if let host = options.host {
             guard active == nil else { return }
@@ -154,8 +169,9 @@ final class SenderController {
         let conn = MessageConnection(connection: NWConnection(to: endpoint, using: params), queue: queue)
         attempt = conn
 
+        let label = interface.map { "\(NetworkInterfaces.kind(of: $0)) (\($0.name))" } ?? "기본 경로"
+        log("연결 시도: \(label)")
         if !upgrade {
-            let label = interface.map { "\(NetworkInterfaces.kind(of: $0)) (\($0.name))" } ?? "기본 경로"
             publish { $0.phase = "연결 시도: \(label)" }
         }
 
@@ -287,16 +303,31 @@ final class SenderController {
                     try await session.start()
                     self.didStartStreaming(session, bitrate: bitrate)
                 } catch {
-                    log("오류: \(error)")
-                    self.status.phase = "오류: \(error)"
-                    self.onUpdate?(self.status)
-                    conn.cancel()
+                    self.sessionFailed(error, conn: conn)
                 }
             }
         } catch {
-            log("오류: \(error)")
-            status.phase = "오류: \(error)"
-            onUpdate?(status)
+            sessionFailed(error, conn: conn)
+        }
+    }
+
+    /// 세션을 시작하지 못했을 때: 정리하고, 원인에 따라 재시도를 미룬다.
+    private func sessionFailed(_ error: Error, conn: MessageConnection) {
+        log("오류: \(error)")
+        stopSession()
+        let nsError = error as NSError
+        let permissionDenied = nsError.domain == SCStreamErrorDomain
+            && nsError.code == SCStreamError.userDeclined.rawValue
+        if permissionDenied {
+            status.needsScreenPermission = true
+            status.phase = "화면 기록 권한이 필요합니다"
+        } else {
+            status.phase = "오류: \(error.localizedDescription) — 10초 후 재시도"
+        }
+        status.connected = false
+        onUpdate?(status)
+        queue.async {
+            self.pausedUntil = permissionDenied ? .distantFuture : Date().addingTimeInterval(10)
             conn.cancel()
         }
     }

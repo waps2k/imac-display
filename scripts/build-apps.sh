@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="0.2.0"
+VERSION="0.2.1"
 swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)"
 
@@ -36,7 +36,9 @@ make_app() {
 </dict>
 </plist>
 PLIST
-    codesign --force --sign - "$app"
+    # 인증서가 없어도 ad-hoc 서명의 요구 조건을 번들 ID로 고정한다.
+    # 기본(cdhash) 요구 조건이면 빌드할 때마다 macOS가 다른 앱으로 보고 화면 기록 권한이 풀린다.
+    codesign --force --sign - -r="designated => identifier \"$bundle_id\"" "$app"
     echo "만듦: $app"
 }
 

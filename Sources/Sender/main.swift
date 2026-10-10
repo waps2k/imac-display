@@ -10,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let speedLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let videoLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let tipLine = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let openPrivacyItem = NSMenuItem(title: "화면 기록 설정 열기…", action: #selector(openScreenRecordingSettings), keyEquivalent: "")
+    private let relaunchItem = NSMenuItem(title: "허용했으면 앱 다시 시작", action: #selector(relaunch), keyEquivalent: "")
     private var controller: SenderController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -22,11 +24,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             line.isEnabled = false
             menu.addItem(line)
         }
+        menu.addItem(openPrivacyItem)
+        menu.addItem(relaunchItem)
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "연결 가이드…", action: #selector(showGuide), keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "종료", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-        menu.items.forEach { if $0.action == #selector(showGuide) { $0.target = self } }
+        let ownActions = [#selector(showGuide), #selector(openScreenRecordingSettings), #selector(relaunch)]
+        menu.items.forEach { if let action = $0.action, ownActions.contains(action) { $0.target = self } }
         statusItem.menu = menu
 
         let options = SenderOptions.load()
@@ -38,7 +43,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func render(_ s: LinkStatus) {
-        let symbol = s.connected ? (s.kind ?? .other).symbolName : "display.2"
+        openPrivacyItem.isHidden = !s.needsScreenPermission
+        relaunchItem.isHidden = !s.needsScreenPermission
+        let symbol = s.needsScreenPermission ? "exclamationmark.triangle"
+            : s.connected ? (s.kind ?? .other).symbolName : "display.2"
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "iMac Display")
         image?.isTemplate = true
         statusItem.button?.image = image
@@ -81,6 +89,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func compactRate(_ bps: Double) -> String {
         if bps >= 1e9 { return String(format: "%.1fG", bps / 1e9) }
         return "\(Int((bps / 1e6).rounded()))M"
+    }
+
+    @objc private func openScreenRecordingSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 화면 기록 권한은 앱을 다시 시작해야 적용된다.
+    @objc private func relaunch() {
+        let config = NSWorkspace.OpenConfiguration()
+        config.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: config) { _, _ in
+            DispatchQueue.main.async { NSApp.terminate(nil) }
+        }
     }
 
     @objc private func showGuide() {
