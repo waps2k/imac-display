@@ -1,138 +1,159 @@
 # iMac Display
 
-구형 iMac(예: iMac 2017 27" 5K)을 맥북의 **확장 모니터**로 쓰기 위한 무료 오픈소스 앱입니다.
-Target Display Mode가 없는 iMac에서도 소프트웨어 방식으로 동작합니다.
+**English** | [한국어](README.ko.md)
+
+A free, open-source app that turns an older iMac (e.g. iMac 2017 27" 5K) into an **extended display** for your MacBook.
+It works in software, so it runs on iMacs that don't support Target Display Mode.
 
 ```
-[맥북: Sender]                                             [iMac: Receiver]
-가상 디스플레이 → ScreenCaptureKit 캡처 → HEVC 하드웨어 인코딩
-                         ──── 썬더볼트 브릿지 / 이더넷 / Wi-Fi (TCP) ────▶
-                                             HEVC 하드웨어 디코딩 → 전체 화면 표시
+[MacBook: Sender]                                          [iMac: Receiver]
+Virtual display → ScreenCaptureKit capture → HEVC hardware encode
+                     ──── Thunderbolt Bridge / Ethernet / Wi-Fi (TCP) ────▶
+                                          HEVC hardware decode → full-screen view
 ```
 
-- 맥북에 실제 모니터처럼 보이는 **가상 디스플레이**가 생깁니다. 창을 끌어다 놓고 배치를 바꿀 수 있습니다.
-- 마우스와 키보드는 맥북 것을 그대로 씁니다.
-- iMac의 해상도(5K면 5120×2880, HiDPI)를 자동으로 맞춥니다.
-- Bonjour로 iMac을 자동으로 찾고, **썬더볼트 → 유선 랜 → Wi-Fi** 순서로 가장 빠른 경로를 골라 연결합니다.
-- 연결 중에도 더 빠른 경로가 생기면 가상 디스플레이를 유지한 채 자동으로 전환합니다.
-- 메뉴 막대에 연결 종류, 링크 속도, 실제 전송 속도, fps, 지연 시간을 표시합니다.
+- Adds a **virtual display** to your MacBook that behaves like a real monitor. You can drag windows onto it and arrange it in System Settings.
+- You keep using the MacBook's own keyboard and mouse.
+- Matches the iMac's native resolution automatically (5120×2880 HiDPI on a 5K iMac).
+- Finds the iMac via Bonjour and picks the fastest path in this order: **Thunderbolt → Ethernet → Wi-Fi**.
+- If a faster path becomes available while connected, it switches over automatically and keeps the virtual display in place.
+- The menu bar shows the connection type, link speed, actual throughput, fps, and latency.
 
-> ⚠️ 실험 단계입니다. 가상 디스플레이는 애플의 **비공개 API**(`CGVirtualDisplay`)를 사용하므로 macOS 업데이트 후 동작하지 않을 수 있습니다.
+> ⚠️ This project is experimental. The virtual display uses Apple's **private API** (`CGVirtualDisplay`), so it may break after a macOS update.
+>
+> The app's own interface (menu bar and iMac waiting screen) is currently in Korean.
 
-## 요구 사항
+## Install
 
-| | 송신 (Sender) | 수신 (Receiver) |
+To use it without developer tools, download two files from the [latest release](https://github.com/waps2k/imac-display/releases/latest).
+
+- `iMacDisplay-Sender-x.y.z.zip` → unzip on your **MacBook** and move it to Applications
+- `iMacDisplay-Receiver-x.y.z.zip` → unzip on your **iMac** and move it to Applications
+
+The apps are not notarized by Apple, so macOS may warn about an "unidentified developer" the first time. Right-click the app and choose **Open**, or run the following in Terminal.
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/iMacDisplay Sender.app"     # MacBook
+xattr -dr com.apple.quarantine "/Applications/iMacDisplay Receiver.app"   # iMac
+```
+
+## Requirements
+
+| | Sender | Receiver |
 |---|---|---|
-| 기기 | 맥북 등 (Apple Silicon 권장) | iMac 등 아무 Mac |
-| macOS | 13 이상 | 13 이상 (iMac 2017 + Ventura OK) |
-| 권한 | 화면 기록, 로컬 네트워크 | 로컬 네트워크 |
+| Device | MacBook or other Mac (Apple Silicon recommended) | iMac or any Mac |
+| macOS | 13 or later | 13 or later (iMac 2017 on Ventura works) |
+| Permissions | Screen Recording, Local Network | Local Network |
 
-빌드하려면 Xcode(또는 Command Line Tools)가 필요합니다.
+## Build from source
 
-## 빌드
+Requires Xcode (or the Command Line Tools).
 
 ```bash
 ./scripts/build-apps.sh
 ```
 
-`dist/`에 Universal(Intel + Apple Silicon) 앱 두 개가 생깁니다.
+This creates two Universal (Intel + Apple Silicon) apps in `dist/`.
 
-- `iMacDisplay Sender.app` → 맥북
-- `iMacDisplay Receiver.app` → iMac으로 복사
+- `iMacDisplay Sender.app` → MacBook
+- `iMacDisplay Receiver.app` → copy to the iMac
 
-## 릴리즈
-
-[Releases](https://github.com/waps2k/imac-display/releases)에서 빌드된 앱을 받을 수 있습니다. 새 버전은 아래 명령 하나로 빌드부터 GitHub 릴리즈 업로드까지 처리합니다.
+A single command builds a new version and publishes it as a GitHub release with the binaries attached.
 
 ```bash
-./scripts/release.sh 0.2.2 "변경 내용"
+./scripts/release.sh 0.2.2 "Release notes"
 ```
 
-## 연결 가이드
+## Connection guide
 
-사용 가능한 연결 중 가장 빠른 경로를 자동으로 고릅니다. 연결할 수 있는 방법을 모두 연결해 두면 앱이 알아서 가장 좋은 경로를 씁니다.
+The app automatically uses the fastest available path. Connect every option you can, and the app picks the best one.
 
-| 순위 | 연결 | 속도 | 방법 |
+| Priority | Connection | Speed | How |
 |---|---|---|---|
-| ① | **썬더볼트** (권장) | 10~40 Gbps | 썬더볼트 3/4 케이블(⚡)로 두 Mac을 직접 연결합니다. 설정할 필요가 없습니다 |
-| ② | **유선 랜** | 1 Gbps 이상 | 두 Mac을 같은 공유기/스위치에 랜선으로 연결합니다 (맥북은 USB-C 랜 어댑터) |
-| ③ | **Wi-Fi** | 환경에 따라 다름 | 같은 Wi-Fi에 연결합니다. 5GHz 대역 또는 Wi-Fi 6을 권장합니다 |
+| ① | **Thunderbolt** (recommended) | 10–40 Gbps | Connect the two Macs directly with a Thunderbolt 3/4 cable (⚡). No setup needed |
+| ② | **Ethernet** | 1 Gbps or more | Plug both Macs into the same router/switch with a LAN cable (use a USB-C Ethernet adapter on the MacBook) |
+| ③ | **Wi-Fi** | Varies | Join the same Wi-Fi network. 5 GHz or Wi-Fi 6 is recommended |
 
-- 썬더볼트 브리지는 케이블만 꽂으면 링크 로컬 주소(169.254.x.x)가 자동으로 잡히고 Bonjour 검색도 됩니다.
-- 일반 USB-C 충전 케이블은 썬더볼트 속도가 나오지 않거나 연결되지 않을 수 있습니다.
-- 연결 종류에 맞춰 비트레이트를 자동으로 정합니다: 썬더볼트 120 / 유선 60 / Wi-Fi 25 Mbps.
-- Wi-Fi로 연결된 상태에서 썬더볼트 케이블을 꽂으면 몇 초 안에 썬더볼트로 전환됩니다. 연결이 잠깐 끊겨도 15초 동안은 가상 디스플레이와 창 배치를 유지합니다.
+- Thunderbolt Bridge assigns a link-local address (169.254.x.x) automatically as soon as the cable is plugged in, and Bonjour discovery works over it.
+- A regular USB-C charging cable may not reach Thunderbolt speeds, or may not connect at all.
+- The bitrate is chosen automatically by connection type: Thunderbolt 120 / Ethernet 60 / Wi-Fi 25 Mbps.
+- If you plug in a Thunderbolt cable while connected over Wi-Fi, the app switches to Thunderbolt within a few seconds. After a brief disconnect, the virtual display and window layout are kept for 15 seconds.
 
-### 메뉴 막대 표시
+### Menu bar
 
 ```
-⚡ 87M          ← 아이콘: 연결 종류 (⚡ 썬더볼트 · 🔌 유선 · 📶 Wi-Fi), 숫자: 실제 전송 속도
+⚡ 87M          ← icon: connection type (⚡ Thunderbolt · 🔌 Ethernet · 📶 Wi-Fi), number: actual throughput
 ───────────────
-전송 중 → iMac
-연결: 썬더볼트 (bridge0) · 링크 20 Gbps
-전송: 87.3 Mbps · 60 fps · 지연 1.4 ms
-화면: 5120×2880 HEVC · 목표 120 Mbps
+Streaming → iMac
+Link: Thunderbolt (bridge0) · 20 Gbps
+Sending: 87.3 Mbps · 60 fps · latency 1.4 ms
+Display: 5120×2880 HEVC · target 120 Mbps
 ```
 
-## 사용법
+(The menu text in the app is in Korean. The lines above are translated.)
 
-1. **iMac**에서 `iMacDisplay Receiver`를 실행합니다. 화면이 검은 대기 화면으로 바뀌고 IP 주소가 표시됩니다. 종료는 ⌘Q입니다.
-   - 다른 Mac에서 복사해 온 앱이 열리지 않으면 터미널에서 다음을 실행하세요.
-     `xattr -dr com.apple.quarantine "/Applications/iMacDisplay Receiver.app"`
-2. **맥북**에서 `iMacDisplay Sender`를 실행합니다. 메뉴 막대에 🖥 아이콘이 생깁니다.
-   - 처음 실행하면 **화면 기록** 권한을 요청합니다. 허용한 뒤 Sender를 다시 실행하세요.
-3. 맥북의 시스템 설정 → 디스플레이에서 iMac의 위치를 배치합니다.
+## Usage
 
-### 설정 (선택)
+1. On the **iMac**, launch `iMacDisplay Receiver`. The screen turns into a black waiting screen that shows the iMac's IP addresses. Press ⌘Q to quit.
+2. On the **MacBook**, launch `iMacDisplay Sender`. An icon appears in the menu bar.
+   - On first launch it asks for **Screen Recording** permission. Grant it, then choose **Restart app** (앱 다시 시작) from the menu bar menu.
+3. On the MacBook, arrange the iMac display in System Settings → Displays.
 
-명령줄 인자나 `defaults`로 바꿀 수 있습니다.
+### Options
+
+Settings can be passed as command-line arguments or stored with `defaults`.
 
 ```bash
-# 한 번만 적용
+# One-time
 "dist/iMacDisplay Sender.app/Contents/MacOS/Sender" -host 10.0.0.1 -bitrate 80
 
-# 영구 적용
+# Persistent
 defaults write com.waps2k.imacdisplay.sender host 10.0.0.1
 defaults write com.waps2k.imacdisplay.sender bitrate -int 80
 ```
 
-| 키 | 기본값 | 설명 |
+| Key | Default | Description |
 |---|---|---|
-| `host` | (자동 검색) | 수신기 IP. 지정하면 자동 경로 선택과 전환을 하지 않습니다 |
+| `host` | (auto-discover) | Receiver IP. When set, automatic path selection and switching are turned off |
 | `port` | 52020 | |
-| `wiredOnly` | false | true면 Wi-Fi를 사용하지 않습니다 |
-| `codec` | hevc | `hevc` 또는 `h264` (H.264는 4K 이하에서만 사용하세요) |
-| `bitrate` | (자동) | Mbps. 지정하지 않으면 연결 종류에 맞춰 자동으로 정합니다 (썬더볼트 120 / 유선 60 / Wi-Fi 25) |
+| `wiredOnly` | false | When true, Wi-Fi is never used |
+| `codec` | hevc | `hevc` or `h264` (use H.264 only at 4K or below) |
+| `bitrate` | (auto) | Mbps. If not set, it follows the connection type (Thunderbolt 120 / Ethernet 60 / Wi-Fi 25) |
 | `fps` | 60 | |
-| `maxWidth` | 0 (원본) | 전송 해상도 상한. 예: `3840`, `2560`. 5K가 버벅이면 줄여 보세요 |
-| `hiDPI` | true | false면 픽셀 1:1 (글자가 작게 보임) |
+| `maxWidth` | 0 (native) | Upper limit for the streamed width, e.g. `3840` or `2560`. Lower it if 5K stutters |
+| `hiDPI` | true | When false, pixels map 1:1 (text looks small) |
 
-## 문제 해결
+## Troubleshooting
 
-- **화면 기록 권한 오류 / 메뉴 막대에 ⚠️ 표시**: 시스템 설정 → 개인정보 보호 및 보안 → 화면 및 시스템 오디오 기록에서 iMacDisplay Sender를 허용하고, 메뉴의 "앱 다시 시작"을 누르세요. 목록에 켜져 있는데도 안 되면 0.2.0 이하 버전의 권한이 남아 있는 것입니다. 아래 명령으로 초기화한 뒤 다시 허용하세요(0.2.1부터는 업데이트해도 권한이 유지됩니다).
+- **Screen Recording error / ⚠️ in the menu bar**: Allow iMacDisplay Sender in System Settings → Privacy & Security → Screen & System Audio Recording, then choose **Restart app** from the menu. If it still fails while the toggle is on, a permission record from version 0.2.0 or earlier is left over. Reset it with the command below and allow it again (from 0.2.1 on, the permission survives updates).
   `tccutil reset ScreenCapture com.waps2k.imacdisplay.sender`
-- **끊기거나 깨짐**: `maxWidth 3840`처럼 해상도를 낮추거나 `bitrate`를 조절해 보세요. iMac 2017 디코더가 5K HEVC를 버거워할 수 있습니다.
-- **iMac을 못 찾음**: `host`로 IP를 직접 지정하세요. iMac 대기 화면에 연결 종류별 IP가 표시됩니다.
-- **썬더볼트로 안 바뀜**: 시스템 설정 → 네트워크에서 "Thunderbolt 브리지"가 초록색(연결됨)인지 확인하세요. 케이블이 썬더볼트 규격인지도 확인하세요.
-- **지연 시간이 안 보임**: iMac의 Receiver도 0.2 이상으로 업데이트하세요.
-- **로그 보기**: 앱 안의 실행 파일을 터미널에서 직접 실행하면 로그가 출력됩니다.
+- **Stuttering or artifacts**: Lower the resolution (for example `maxWidth 3840`) or adjust `bitrate`. The iMac 2017 decoder may struggle with 5K HEVC.
+- **The iMac isn't found**: Set its IP with `host`. The iMac's waiting screen lists its IP for each connection type.
+- **It doesn't switch to Thunderbolt**: In System Settings → Network, check that "Thunderbolt Bridge" is green (connected), and that the cable is a Thunderbolt cable.
+- **Latency isn't shown**: Update the iMac's Receiver to 0.2 or later as well.
+- **Viewing logs**: Run the executable inside the app bundle from Terminal to see its log output.
 
-## 구조
+## Project layout
 
 ```
 Sources/
-  Wire/                    공용 메시지 프로토콜 (길이 접두 TCP 프레이밍)
-  CGVirtualDisplayPrivate/ 비공개 가상 디스플레이 API 헤더
-  Sender/                  가상 디스플레이, 캡처, 인코딩, 연결 관리
-  Receiver/                Bonjour 서버, 디코딩·표시 (AVSampleBufferDisplayLayer)
+  Wire/                    Shared message protocol (length-prefixed TCP framing)
+  CGVirtualDisplayPrivate/ Header for the private virtual display API
+  Sender/                  Virtual display, capture, encoding, connection management
+  Receiver/                Bonjour server, decoding and display (AVSampleBufferDisplayLayer)
 ```
 
-## 로드맵
+## Roadmap
 
-- [ ] 실기기 테스트 및 5K/60Hz 튜닝
-- [x] 연결 우선순위(썬더볼트 → 유선 → Wi-Fi)와 자동 전환
-- [x] 메뉴 막대에 연결 종류와 속도 표시
-- [ ] 메뉴에서 해상도·비트레이트 변경
-- [ ] 오디오 전송
-- [ ] iMac 밝기 조절
-- [ ] 미러링 모드
+- [ ] Real-device testing and 5K/60 Hz tuning
+- [x] Connection priority (Thunderbolt → Ethernet → Wi-Fi) with automatic switching
+- [x] Connection type and speed in the menu bar
+- [ ] Change resolution and bitrate from the menu
+- [ ] Audio streaming
+- [ ] iMac brightness control
+- [ ] Mirroring mode
+- [ ] English app interface
+
+## License
+
+[MIT](LICENSE) © 2026 Joungyong
