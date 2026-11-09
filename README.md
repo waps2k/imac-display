@@ -2,6 +2,8 @@
 
 **English** | [한국어](README.ko.md)
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/waps99)
+
 A free, open-source app that turns an older iMac (e.g. iMac 2017 27" 5K) into an **extended display** for your MacBook.
 It works in software, so it runs on iMacs that don't support Target Display Mode.
 
@@ -162,6 +164,14 @@ Sources/
 - [ ] iMac brightness control
 - [ ] Mirroring mode
 - [x] English app interface
+
+## Support
+
+If iMac Display gave your old iMac a second life, you can buy me a coffee. ☕
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/waps99)
+
+Support is optional; every feature is free.
 
 ## License
 
