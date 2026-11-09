@@ -171,6 +171,10 @@ If iMac Display gave your old iMac a second life, you can buy me a coffee. ☕
 
 [![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/waps99)
 
+In Korea you can also send via Toss: scan this QR with your phone camera or the Toss app.
+
+<img src="docs/donate/toss-qr.png" width="180" alt="Toss transfer QR">
+
 Support is optional; every feature is free.
 
 ## License
