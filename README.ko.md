@@ -2,6 +2,8 @@
 
 [English](README.md) | **한국어**
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-후원하기-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/waps99)
+
 구형 iMac(예: iMac 2017 27" 5K)을 맥북의 **확장 모니터**로 쓰기 위한 무료 오픈소스 앱입니다.
 Target Display Mode가 없는 iMac에서도 소프트웨어 방식으로 동작합니다.
 
@@ -161,6 +163,14 @@ Sources/
 - [ ] iMac 밝기 조절
 - [ ] 미러링 모드
 - [x] 영어 화면 지원
+
+## 후원하기
+
+오래된 iMac을 다시 쓰는 데 도움이 됐다면 커피 한 잔으로 응원해 주세요. ☕
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-후원하기-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/waps99)
+
+후원은 선택이며, 모든 기능은 무료입니다.
 
 ## 라이선스
 
